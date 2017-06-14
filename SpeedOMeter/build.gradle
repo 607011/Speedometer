@@ -1,6 +1,51 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
+
+// Credit: https://github.com/nisrulz/android-tips-tricks
+def getGitHash = { ->
+    def stdout = new ByteArrayOutputStream()
+    exec {
+        commandLine 'git', 'rev-parse', '--short', 'HEAD'
+        standardOutput = stdout
+    }
+    return stdout.toString().trim()
+}
+
+
+def getVersionCode = { ->
+    try {
+        def code = new ByteArrayOutputStream()
+        exec {
+            commandLine 'git', 'rev-list', 'HEAD', '--count'
+            standardOutput = code
+        }
+        return Integer.parseInt(code.toString().trim())
+    } catch (exception) {
+        return "0";
+    }
+}
+
+
+def getVersionName = { ->
+    try {
+        def stdout = new ByteArrayOutputStream()
+        exec {
+            commandLine 'git', 'describe', '--tags', '--dirty'
+            standardOutput = stdout
+        }
+        return stdout.toString().trim()
+    } catch (exception) {
+        return "0.0.1";
+    }
+}
+
+
+def getDateOfBuild = { -> // ISO 8601 time format
+    return new Date().format("yyyy-MM-dd'T'HH:mm'Z'").toString().trim()
+}
+
+
 android {
     signingConfigs {
         default_signing {
@@ -12,16 +57,46 @@ android {
         applicationId "de.ct.speedoometer"
         minSdkVersion 21
         targetSdkVersion 25
-        versionCode 1
-        versionName "1.0.9"
+        versionCode getVersionCode()
+        versionName getVersionName()
+        buildConfigField "String", "GIT_SHA", "\"${getGitHash()}\""
+        buildConfigField "String", "DATE_OF_BUILD", "\"${getDateOfBuild()}\""
     }
     buildTypes {
         release {
             minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+        debug {
+            applicationIdSuffix '.debug'
+            versionNameSuffix '-DEBUG'
+        }
     }
+    splits {
+        abi {
+            enable true
+            reset()
+            include 'armeabi', 'armeabi-v7a', 'mips', 'x86' //select ABIs to build APKs for
+            universalApk false //generate an additional APK that contains all the ABIs
+        }
+    }
+
+    project.ext.versionCodes = ['armeabi': 1, 'armeabi-v7a': 2, 'mips': 5, 'x86': 8]
+
+
+    /*
+    android.applicationVariants.all { variant ->
+        variant.outputs.each { output ->
+            output.versionCodeOverride =
+                    project.ext.versionCodes.get(output.getFilter(com.android.build.OutputFile.ABI), 0) *
+                            1000000 +
+                            android.defaultConfig.versionCode
+        }
+    }
+    */
 }
+
 
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
@@ -32,9 +107,9 @@ dependencies {
     compile 'com.android.support:appcompat-v7:25.4.0'
     compile 'com.android.support:support-core-utils:25.4.0'
     compile 'com.android.support:support-v4:25.4.0'
-    testCompile 'junit:junit:4.12'
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
 }
+
 repositories {
     mavenCentral()
 }

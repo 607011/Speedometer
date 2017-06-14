@@ -21,7 +21,7 @@ package de.ct.speedometer
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.support.v4.app.NotificationCompat.CarExtender
+// import android.support.v4.app.NotificationCompat.CarExtender
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
@@ -35,6 +35,7 @@ import android.os.PowerManager
 import android.util.Log
 import android.view.Menu
 import android.widget.SeekBar
+import android.widget.TextView
 import android.widget.Toast
 
 
@@ -57,6 +58,7 @@ class MainActivity : AppCompatActivity(), IBaseGpsListener, ISpeedRangeSelection
         checkPermissions()
         initAccelerationSensors()
         updateSpeedometer()
+        BuildConfig.GIT_SHA
     }
 
 
@@ -74,11 +76,9 @@ class MainActivity : AppCompatActivity(), IBaseGpsListener, ISpeedRangeSelection
                 val alpha = .5f + .4999f * progress / alphaSeekBar.max
                 speedometer!!.setSmoothingAlpha(alpha)
             }
-
             override fun onStartTrackingTouch(seekBar: SeekBar) {
                 // do nothing ...
             }
-
             override fun onStopTrackingTouch(seekBar: SeekBar) {
                 val prefs = getPreferences(Context.MODE_PRIVATE)
                 val alpha = seekBar.progress.toFloat() / seekBar.max
@@ -88,6 +88,8 @@ class MainActivity : AppCompatActivity(), IBaseGpsListener, ISpeedRangeSelection
         val prefs = getPreferences(Context.MODE_PRIVATE)
         val alpha = prefs.getFloat("alpha", DEFAULT_SMOOTHING_ALPHA)
         alphaSeekBar.progress = (alpha * alphaSeekBar.max).toInt()
+        val appInfoView = findViewById(R.id.appInfoView) as TextView
+        appInfoView.text = "Speedometer ${BuildConfig.VERSION_NAME}-${BuildConfig.VERSION_CODE} ${BuildConfig.GIT_SHA} ${BuildConfig.DATE_OF_BUILD}"
     }
 
 
