@@ -17,8 +17,8 @@
 
 */
 
-package net.ersatzworld.olau.speedometer
+package de.ct.speedometer
 
-interface IOnResetListener {
-    fun onReset()
+interface ISpeedRangeSelectionListener {
+    fun onSelectedSpeedRange(lo: Int, hi: Int)
 }

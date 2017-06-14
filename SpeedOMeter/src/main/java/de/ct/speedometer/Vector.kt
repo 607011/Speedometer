@@ -17,8 +17,23 @@
 
 */
 
-package net.ersatzworld.olau.speedometer
+package de.ct.speedometer
 
-interface ISpeedRangeSelectionListener {
-    fun onSelectedSpeedRange(lo: Int, hi: Int)
+
+data class Vector3(var x: Float = 0f, var y: Float = 0f, var z: Float = 0f) {
+
+    fun absMax(o: Vector3) {
+        x = Math.max(Math.abs(o.x), x)
+        y = Math.max(Math.abs(o.y), y)
+        z = Math.max(Math.abs(o.z), z)
+    }
+
+
+    fun overallMax(): Float {
+        return Math.max(x, Math.max(y, z))
+    }
 }
+
+
+data class Vector4(var s: Float = 0f, var t: Float = 0f, var u: Float = 0f, var v: Float = 0f)
+

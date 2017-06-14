@@ -17,7 +17,7 @@
 
 */
 
-package net.ersatzworld.olau.speedometer
+package de.ct.speedometer
 
 
 class AccelerationSequence(val size: Int) {

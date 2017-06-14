@@ -17,7 +17,7 @@
 
 */
 
-package net.ersatzworld.olau.speedometer
+package de.ct.speedometer
 
 
 import android.content.Context
