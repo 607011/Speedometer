@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <NumberPicker
+        android:id="@+id/selectedLoSpeed"
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        />
+
+    <NumberPicker
+        android:id="@+id/selectedHiSpeed"
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal">
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1" />
+
+        <Button
+            android:id="@+id/cancelSpeedRangeButton"
+            android:layout_marginTop="16dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minHeight="@dimen/regular_button_height"
+            android:minWidth="@dimen/regular_button_width"
+            android:text="@string/cancel" />
+
+        <Button
+            android:id="@+id/okSpeedRangeButton"
+            android:layout_marginTop="16dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minHeight="@dimen/regular_button_height"
+            android:minWidth="@dimen/regular_button_width"
+            android:text="@string/ok" />
+
+    </LinearLayout>
+
+</LinearLayout>

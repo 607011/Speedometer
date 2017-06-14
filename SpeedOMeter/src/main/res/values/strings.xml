@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">Speedometer</string>
+    <string name="speedLabel">Current speed [km/h]</string>
+    <string name="timeLabel">secs</string>
+    <string name="resetButton">Reset</string>
+    <string name="dummy">-</string>
+    <string name="select_range">Select speed range</string>
+    <string name="select_range_title">Min/max speed</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="settings">Settings</string>
+    <string name="about">About</string>
+    <string name="help">Help</string>
+</resources>

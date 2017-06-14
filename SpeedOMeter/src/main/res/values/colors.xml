@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#3F51B5</color>
+    <color name="colorPrimaryDark">#303F9F</color>
+    <color name="colorAccent">#FF4081</color>
+    <color name="background">#181824</color>
+    <color name="primary">#b53f51</color>
+    <color name="primaryDark">#9f303f</color>
+    <color name="accent">#ffd0ff80</color>
+    <color name="ready">#7fa0e376</color>
+    <color name="started">#7ffee170</color>
+    <color name="pending">#7f0cc1fe</color>
+    <color name="minorTick">#3838f0</color>
+    <color name="majorTick">#3838f0</color>
+    <color name="specialTick">#f8f03090</color>
+    <color name="axis">#333399</color>
+    <color name="speed">#f8f0f030</color>
+    <color name="topSpeed">#f830f090</color>
+    <color name="topSpeedText">#f830f090</color>
+    <color name="g">#a040ff3f</color>
+    <color name="a">#a0403ffe</color>
+    <color name="tachoText">#d0d0f0</color>
+    <color name="tachoBorder">#3030f0</color>
+    <color name="gBarBorder">#f0f8f8f8</color>
+    <color name="gBar">#f0f8f8f8</color>
+    <color name="lateralAccel">#f8f0f0f0</color>
+    <color name="topAccel">#f830f090</color>
+    <color name="topDecel">#f8f03090</color>
+    <color name="orientationHelperInner">#f830f090</color>
+    <color name="orientationHelperOuter">#f8f03090</color>
+</resources>

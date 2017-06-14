@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:keepScreenOn="true"
+    android:theme="@style/Theme.AppCompat"
+    tools:context="net.ersatzworld.olau.speedometer.MainActivity"
+    >
+
+    <net.ersatzworld.olau.speedometer.SpeedometerView
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:padding="8dp"
+        android:id="@+id/speedometer"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintHorizontal_bias="0.0" />
+
+    <SeekBar
+        android:id="@+id/alphaSeekBar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:max="10000"
+        android:progress="9000"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/speedometer" />
+
+    <GridLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:columnCount="2"
+        android:rowCount="2"
+        app:layout_constraintTop_toBottomOf="@+id/alphaSeekBar"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:id="@+id/gridLayout">
+
+        <net.ersatzworld.olau.speedometer.StopwatchView
+            android:id="@+id/stopwatch1"
+            android:background="@drawable/ripple"
+            android:layout_margin="1dp"
+            />
+
+        <net.ersatzworld.olau.speedometer.StopwatchView
+            android:id="@+id/stopwatch2"
+            android:background="@drawable/ripple"
+            android:layout_margin="1dp"
+            />
+
+        <net.ersatzworld.olau.speedometer.StopwatchView
+            android:id="@+id/stopwatch3"
+            android:background="@drawable/ripple"
+            android:layout_margin="1dp"
+            />
+
+        <net.ersatzworld.olau.speedometer.StopwatchView
+            android:id="@+id/stopwatch4"
+            android:background="@drawable/ripple"
+            android:layout_margin="1dp"
+            />
+
+    </GridLayout>
+
+</android.support.constraint.ConstraintLayout>
