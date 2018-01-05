@@ -1,6 +1,6 @@
 /*
 
-    Copyright (c) 2017 Oliver Lau <ola@ct.de>, Heise Medien GmbH & Co. KG
+    Copyright (c) 2017-2018 Oliver Lau <ola@ct.de>, Heise Medien GmbH & Co. KG
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -35,5 +35,5 @@ data class Vector3(var x: Float = 0f, var y: Float = 0f, var z: Float = 0f) {
 }
 
 
-data class Vector4(var s: Float = 0f, var t: Float = 0f, var u: Float = 0f, var v: Float = 0f)
+// data class Vector4(var s: Float = 0f, var t: Float = 0f, var u: Float = 0f, var v: Float = 0f)
 

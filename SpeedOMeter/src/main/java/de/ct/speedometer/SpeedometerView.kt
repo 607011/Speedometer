@@ -1,6 +1,6 @@
 /*
 
-    Copyright (c) 2017 Oliver Lau <ola@ct.de>, Heise Medien GmbH & Co. KG
+    Copyright (c) 2017-2018 Oliver Lau <ola@ct.de>, Heise Medien GmbH & Co. KG
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -26,10 +26,7 @@ import android.graphics.DashPathEffect
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.Typeface
-import android.hardware.Sensor
-import android.hardware.SensorEvent
-import android.hardware.SensorEventListener
-import android.hardware.SensorManager
+import android.hardware.*
 import android.location.Location
 import android.support.v4.content.ContextCompat
 import android.util.AttributeSet
@@ -37,16 +34,16 @@ import android.util.Log
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
-import java.util.ArrayList
+import android.widget.Toast
 
 
 class SpeedometerView : View, SensorEventListener {
     private var density = 0f
-    private var minSpeed: Int = 0
-    private var maxSpeed: Int = 0
-    private var minorTickInterval: Int = 0
-    private var majorTickInterval: Int = 0
-    private var specialTick: MutableList<Int> = ArrayList()
+    private var minSpeed = 0
+    private var maxSpeed = 0
+    private var minorTickInterval = 0
+    private var majorTickInterval = 0
+    private var specialTick: MutableList<Int> = mutableListOf()
     private var doDrawGDiagrams = false
     private var topAccel = 0f
     private var topDecel = 0f
@@ -89,14 +86,14 @@ class SpeedometerView : View, SensorEventListener {
     private var orientationHelperOuterPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private var orientationCircleInnerPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private var orientationCircleOuterPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private var diagramPath= Path()
+    private var diagramPath = Path()
     private var gestureDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
         override fun onDown(e: MotionEvent): Boolean {
             return true
         }
         override fun onDoubleTap(e: MotionEvent): Boolean {
             reset()
-            resetListener!!.onReset()
+            resetListener?.onReset()
             return true
         }
     })
@@ -106,6 +103,7 @@ class SpeedometerView : View, SensorEventListener {
     private var rotationMatrix = FloatArray(9, { 0f })
     private var orientationAngles = FloatArray(3, { 0f })
     private var rotationVector = FloatArray(5, { 0f })
+    private var hasSetOff = false
 
 
     constructor(context: Context) : super(context) {
@@ -219,7 +217,6 @@ class SpeedometerView : View, SensorEventListener {
         orientationCircleInnerPaint.color = ContextCompat.getColor(context, R.color.orientationHelperInner)
         orientationCircleOuterPaint.style = Paint.Style.FILL
         orientationCircleOuterPaint.color = ContextCompat.getColor(context, R.color.orientationHelperOuter)
-        background = context.getDrawable(R.drawable.tacho_bg)
         reset()
     }
 
@@ -261,6 +258,7 @@ class SpeedometerView : View, SensorEventListener {
         topSpeed = 0.0
         topAccel = 0f
         topDecel = 0f
+        setBackgroundResource(R.drawable.tacho_bg)
         invalidate()
     }
 
@@ -319,14 +317,29 @@ class SpeedometerView : View, SensorEventListener {
 
     fun setSpeed(speed: Float) {
         var v = speed.toDouble()
-        if (v > maxSpeed)
+        if (v > maxSpeed) {
             v = maxSpeed.toDouble()
-        else if (v < minSpeed)
+        }
+        else if (v < minSpeed) {
             v = minSpeed.toDouble()
+        }
         this.speed = v
-        if (v > topSpeed)
+        if (v > topSpeed) {
             topSpeed = v
+        }
         invalidate()
+    }
+
+
+    fun setOff() {
+        hasSetOff = true
+        setBackgroundResource(R.drawable.tacho_bg_ready)
+        invalidate()
+    }
+
+
+    private fun signalReady() {
+        Toast.makeText(context, "Ready for action!", Toast.LENGTH_SHORT).show()
     }
 
 
@@ -383,52 +396,46 @@ class SpeedometerView : View, SensorEventListener {
 
         // draw g diagrams
         if (doDrawGDiagrams) {
-            if (gv.size > 1) {
-                diagramPath.reset()
-                val H = 20 * density
-                val ys = H / Math.abs(topG.overallMax())
-                val x0 = cx - gv.size / 2 * density
-                var y0: Float
-                y0 = cy - 1.5f * H * 2.5f
-                diagramPath.moveTo(x0, gv[0].x + y0)
-                for (i in 1..gv.size - 1) {
-                    diagramPath.lineTo(x0 + i * density, y0 + gv[i].x * ys)
-                }
-                y0 = cy - .5f * H * 2.5f
-                diagramPath.moveTo(x0, gv[0].y + y0)
-                for (i in 1..gv.size - 1) {
-                    diagramPath.lineTo(x0 + i * density, y0 + gv[i].y * ys)
-                }
-                y0 = cy + .5f * H * 2.5f
-                diagramPath.moveTo(x0, gv[0].z + y0)
-                for (i in 1..gv.size - 1) {
-                    diagramPath.lineTo(x0 + i * density, y0 + gv[i].z * ys)
-                }
-                canvas.drawPath(diagramPath, gPaint)
+            val height = 20f * density
+            val x0 = cx - .5f * AccelerationSequenceLength * density
+            var ys: Float
+            var y0: Float
+            diagramPath.reset()
+            ys = height / Math.abs(topG.overallMax())
+            y0 = cy - 1.5f * height * 2.5f
+            diagramPath.moveTo(x0, gv[0].x + y0)
+            for (i in 1 until gv.size) {
+                diagramPath.lineTo(x0 + i * density, y0 + gv[i].x * ys)
             }
-            if (av.size > 1) {
-                diagramPath.reset()
-                val H = 20 * density
-                val ys = H / Math.abs(topA.overallMax())
-                val x0 = cx - av.size / 2 * density
-                var y0: Float
-                y0 = cy - 1.5f * H * 2.5f
-                diagramPath.moveTo(x0, av.current.x + y0)
-                for (i in 1..av.size - 1) {
-                    diagramPath.lineTo(x0 + i * density, y0 + av[i].x * ys)
-                }
-                y0 = cy - .5f * H * 2.5f
-                diagramPath.moveTo(x0, av.current.y + y0)
-                for (i in 1..av.size - 1) {
-                    diagramPath.lineTo(x0 + i * density, y0 + (av[i].y - SensorManager.GRAVITY_EARTH) * ys)
-                }
-                y0 = cy + .5f * H * 2.5f
-                diagramPath.moveTo(x0, av.current.z + y0)
-                for (i in 1..av.size - 1) {
-                    diagramPath.lineTo(x0 + x * density, y0 + av[i].z * ys)
-                }
-                canvas.drawPath(diagramPath, aPaint)
+            y0 = cy - .5f * height * 2.5f
+            diagramPath.moveTo(x0, gv[0].y + y0)
+            for (i in 1 until gv.size) {
+                diagramPath.lineTo(x0 + i * density, y0 + gv[i].y * ys)
             }
+            y0 = cy + .5f * height * 2.5f
+            diagramPath.moveTo(x0, gv[0].z + y0)
+            for (i in 1 until gv.size) {
+                diagramPath.lineTo(x0 + i * density, y0 + gv[i].z * ys)
+            }
+            canvas.drawPath(diagramPath, gPaint)
+            diagramPath.reset()
+            ys = height / Math.abs(topA.overallMax())
+            y0 = cy - 1.5f * height * 2.5f
+            diagramPath.moveTo(x0, av.current.x + y0)
+            for (i in 1 until av.size) {
+                diagramPath.lineTo(x0 + i * density, y0 + av[i].x * ys)
+            }
+            y0 = cy - .5f * height * 2.5f
+            diagramPath.moveTo(x0, av.current.y + y0)
+            for (i in 1 until av.size) {
+                diagramPath.lineTo(x0 + i * density, y0 + (av[i].y - SensorManager.GRAVITY_EARTH) * ys)
+            }
+            y0 = cy + .5f * height * 2.5f
+            diagramPath.moveTo(x0, av.current.z + y0)
+            for (i in 1 until av.size) {
+                diagramPath.lineTo(x0 + x * density, y0 + av[i].z * ys)
+            }
+            canvas.drawPath(diagramPath, aPaint)
         }
 
         // draw orientation helper
@@ -558,30 +565,31 @@ class SpeedometerView : View, SensorEventListener {
         val pad = 2 * density
         val xBarOffset = -73 * density
         val yBarOffset = -58 * density + barH
-        val MaxG = 1f
+        val maxG = 1f
         canvas.drawRect(
                 cx + xBarOffset,
                 cy + yBarOffset - barH,
                 cx + xBarOffset + barW,
                 cy + yBarOffset,
                 gBarBorderPaint)
-        if (gravity.z > 0f) {
+        val z = gravity.z / maxG * (barH - 2 * pad)
+        if (z > 0f) {
             canvas.drawRect(
                     cx + xBarOffset + pad,
-                    cy + yBarOffset - gravity.z / MaxG * (barH - 2 * pad),
+                    cy + yBarOffset - z,
                     cx + xBarOffset - pad + barW / 2,
                     cy + yBarOffset - pad,
                     gBarPaint)
         } else {
             canvas.drawRect(
                     cx + xBarOffset + pad + barW / 2,
-                    cy + yBarOffset + gravity.z / MaxG * (barH - 2 * pad),
+                    cy + yBarOffset + z,
                     cx + xBarOffset - pad + barW,
                     cy + yBarOffset - pad,
                     gBarPaint)
         }
         if (topDecel > .01f) {
-            val gMaxY = cy + (yBarOffset - topDecel / MaxG * (barH - 2 * pad))
+            val gMaxY = cy + (yBarOffset - topDecel / maxG * (barH - 2 * pad))
             canvas.drawLine(
                     cx + xBarOffset + pad,
                     gMaxY,
@@ -595,7 +603,7 @@ class SpeedometerView : View, SensorEventListener {
                     topDecelTextPaint)
         }
         if (topAccel > .01f) {
-            val gMaxY = cy + (yBarOffset - topAccel / MaxG * (barH - 2 * pad))
+            val gMaxY = cy + (yBarOffset - topAccel / maxG * (barH - 2 * pad))
             canvas.drawLine(
                     cx + xBarOffset + pad + barW / 2,
                     gMaxY,
@@ -610,6 +618,7 @@ class SpeedometerView : View, SensorEventListener {
         }
 
         // draw MG info
+/*
         canvas.drawText(
                 "%.3f".format(rotationVector[0]),
                 cx + cx / 3,
@@ -640,7 +649,7 @@ class SpeedometerView : View, SensorEventListener {
                 cx + cx / 3,
                 cy - 40 * density + 20f * density,
                 locTextPaint)
-        /*
+*/
         canvas.drawText(
                 "%.1f".format(orientationAngles[0] / Math.PI * 180),
                 cx + cx / 3,
@@ -661,7 +670,6 @@ class SpeedometerView : View, SensorEventListener {
                 cx + cx / 3,
                 cy - 40 * density + 7.5f * density,
                 locTextPaint)
-        */
 
 
         // draw lat/lon

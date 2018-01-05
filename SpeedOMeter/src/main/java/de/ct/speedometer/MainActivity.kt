@@ -1,6 +1,6 @@
 /*
 
-    Copyright (c) 2017 Oliver Lau <ola@ct.de>, Heise Medien GmbH & Co. KG
+    Copyright (c) 2017-2018 Oliver Lau <ola@ct.de>, Heise Medien GmbH & Co. KG
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -21,15 +21,14 @@ package de.ct.speedometer
 
 import android.Manifest
 import android.content.pm.PackageManager
-// import android.support.v4.app.NotificationCompat.CarExtender
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
-import android.hardware.Sensor
-import android.hardware.SensorManager
 import android.location.Location
 import android.location.LocationManager
 import android.content.Context
+import android.hardware.*
+import android.location.LocationListener
 import android.os.Bundle
 import android.os.PowerManager
 import android.util.Log
@@ -39,7 +38,8 @@ import android.widget.TextView
 import android.widget.Toast
 
 
-class MainActivity : AppCompatActivity(), IBaseGpsListener, ISpeedRangeSelectionListener, IOnResetListener {
+class MainActivity : AppCompatActivity(), LocationListener, ISpeedRangeSelectionListener, IOnResetListener, SensorEventListener {
+
     private var intervals = mutableListOf<SpeedInterval>()
     private var locationManager: LocationManager? = null
     private var speedometer: SpeedometerView? = null
@@ -49,6 +49,20 @@ class MainActivity : AppCompatActivity(), IBaseGpsListener, ISpeedRangeSelection
     private var magneticField: Sensor? = null
     private var rotationVector: Sensor? = null
     private var wakeLock: PowerManager.WakeLock? = null
+    private var stationaryDetect: Sensor? = null
+    /*
+    private var significantMotion: Sensor? = null
+    private var significantMotionListener = object : TriggerEventListener() {
+        private var counter : Int = 0
+        override fun onTrigger(event: TriggerEvent) {
+            ++counter
+            appInfoView!!.text = event.toString() + " counter: " + counter
+            sensorManager!!.requestTriggerSensor(this, significantMotion)
+        }
+    }
+    */
+    private var appInfoView: TextView? = null
+    private var aThreshold = 0.2f
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -58,7 +72,6 @@ class MainActivity : AppCompatActivity(), IBaseGpsListener, ISpeedRangeSelection
         checkPermissions()
         initAccelerationSensors()
         updateSpeedometer()
-        BuildConfig.GIT_SHA
     }
 
 
@@ -85,11 +98,34 @@ class MainActivity : AppCompatActivity(), IBaseGpsListener, ISpeedRangeSelection
                 prefs.edit().putFloat("alpha", alpha).apply()
             }
         })
+        var aSeekBar: SeekBar = findViewById(R.id.aSeekBar) as SeekBar
+        aSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
+                setAThreshold(progress.toFloat() / alphaSeekBar.max)
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar) {
+                // do nothing ...
+            }
+            override fun onStopTrackingTouch(seekBar: SeekBar) {
+                val prefs = getPreferences(Context.MODE_PRIVATE)
+                aThreshold = seekBar.progress.toFloat() / seekBar.max
+                prefs.edit().putFloat("aThreshold", aThreshold).apply()
+            }
+        })
         val prefs = getPreferences(Context.MODE_PRIVATE)
         val alpha = prefs.getFloat("alpha", DEFAULT_SMOOTHING_ALPHA)
         alphaSeekBar.progress = (alpha * alphaSeekBar.max).toInt()
-        val appInfoView = findViewById(R.id.appInfoView) as TextView
-        appInfoView.text = "Speedometer ${BuildConfig.VERSION_NAME}-${BuildConfig.VERSION_CODE} ${BuildConfig.GIT_SHA} ${BuildConfig.DATE_OF_BUILD}"
+        setAThreshold(prefs.getFloat("aThreshold", DEFAULT_A_THRESHOLD))
+        appInfoView = findViewById(R.id.appInfoView) as TextView
+        appInfoView!!.text = "Speedometer ${BuildConfig.VERSION_NAME}-${BuildConfig.VERSION_CODE} ${BuildConfig.DATE_OF_BUILD}"
+    }
+
+
+    private fun setAThreshold(a: Float) {
+        aThreshold = a
+        var aSeekBar: SeekBar = findViewById(R.id.aSeekBar) as SeekBar
+        aSeekBar.progress = (aThreshold * aSeekBar.max).toInt()
+        (findViewById(R.id.aThresholdView) as TextView).text = "%.3f".format(aThreshold)
     }
 
 
@@ -139,8 +175,11 @@ class MainActivity : AppCompatActivity(), IBaseGpsListener, ISpeedRangeSelection
         startLocationUpdates()
         sensorManager!!.registerListener(speedometer, linearAccelerometer, SensorManager.SENSOR_DELAY_UI)
         sensorManager!!.registerListener(speedometer, accelerometer, SensorManager.SENSOR_DELAY_UI)
+        sensorManager!!.registerListener(this, linearAccelerometer, SensorManager.SENSOR_DELAY_FASTEST)
         sensorManager!!.registerListener(speedometer, magneticField, SensorManager.SENSOR_DELAY_NORMAL)
         sensorManager!!.registerListener(speedometer, rotationVector, SensorManager.SENSOR_DELAY_NORMAL)
+        stationaryDetect?.let { sensorManager!!.registerListener(speedometer, stationaryDetect, SensorManager.SENSOR_DELAY_NORMAL) }
+        //sensorManager!!.requestTriggerSensor(significantMotionListener, significantMotion)
         keepAlive()
     }
 
@@ -150,8 +189,13 @@ class MainActivity : AppCompatActivity(), IBaseGpsListener, ISpeedRangeSelection
         stopLocationUpdates()
         sensorManager!!.unregisterListener(speedometer, linearAccelerometer)
         sensorManager!!.unregisterListener(speedometer, accelerometer)
+        sensorManager!!.unregisterListener(this, accelerometer)
         sensorManager!!.unregisterListener(speedometer, magneticField)
         sensorManager!!.unregisterListener(speedometer, rotationVector)
+        stationaryDetect?.let {
+            sensorManager!!.unregisterListener(speedometer, stationaryDetect)
+        }
+        //sensorManager!!.cancelTriggerSensor(significantMotionListener, significantMotion)
         allowSleep()
     }
 
@@ -192,6 +236,7 @@ class MainActivity : AppCompatActivity(), IBaseGpsListener, ISpeedRangeSelection
     }
 
 
+    /*
     private fun createSpeedRunnable(t: Float): Runnable {
         return Runnable {
             val location = Location("")
@@ -199,6 +244,7 @@ class MainActivity : AppCompatActivity(), IBaseGpsListener, ISpeedRangeSelection
             onLocationChanged(location)
         }
     }
+    */
 
 
     private fun startLocationUpdates() {
@@ -207,21 +253,20 @@ class MainActivity : AppCompatActivity(), IBaseGpsListener, ISpeedRangeSelection
                 locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
             }
             locationManager!!.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0f, this)
-            locationManager!!.addGpsStatusListener(this)
         } catch (e: java.lang.SecurityException) {
             Toast.makeText(this, e.message, Toast.LENGTH_LONG).show()
         }
 
-        if (SimulationEnabled) {
-            val MaxT = 23f
-            val h = android.os.Handler()
-            var t = .5f
-            while (t < MaxT) {
-                h.postDelayed(createSpeedRunnable(t), (1e3f * t).toLong())
-                t += .3f
-            }
-            h.postDelayed(createSpeedRunnable(0f), (1e3f * (MaxT + 1)).toLong())
+        /* // SIMULATION
+        val maxT = 23f
+        val h = android.os.Handler()
+        var t = .5f
+        while (t < maxT) {
+            h.postDelayed(createSpeedRunnable(t), (1e3f * t).toLong())
+            t += .3f
         }
+        h.postDelayed(createSpeedRunnable(0f), (1e3f * (maxT + 1)).toLong())
+        */
     }
 
 
@@ -245,13 +290,6 @@ class MainActivity : AppCompatActivity(), IBaseGpsListener, ISpeedRangeSelection
 
     private fun initLocationManager() {
         startLocationUpdates()
-        try {
-            if (locationManager != null) {
-                locationManager!!.addGpsStatusListener(this)
-            }
-        } catch (e: java.lang.SecurityException) {
-            Toast.makeText(this, e.message, Toast.LENGTH_LONG).show()
-        }
         updateSpeed(null)
     }
 
@@ -262,6 +300,20 @@ class MainActivity : AppCompatActivity(), IBaseGpsListener, ISpeedRangeSelection
         accelerometer = sensorManager!!.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         magneticField = sensorManager!!.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
         rotationVector = sensorManager!!.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
+        stationaryDetect = sensorManager!!.getDefaultSensor(Sensor.TYPE_STATIONARY_DETECT)
+        //significantMotion = sensorManager!!.getDefaultSensor(Sensor.TYPE_SIGNIFICANT_MOTION)
+        /*
+        val sensorList = sensorManager!!.getSensorList(Sensor.TYPE_ALL)
+        for (sensor in sensorList) {
+            Log.d(TAG, sensor.name)
+        }
+        linearAccelerometer?.let {Log.d(TAG, linearAccelerometer?.toString())}
+        accelerometer?.let {Log.d(TAG, accelerometer?.toString())}
+        magneticField?.let {Log.d(TAG, magneticField?.toString())}
+        rotationVector?.let {Log.d(TAG, rotationVector?.toString())}
+        stationaryDetect?.let {Log.d(TAG, stationaryDetect?.toString())}
+        significantMotion?.let {Log.d(TAG, significantMotion?.toString())}
+        */
     }
 
 
@@ -273,6 +325,33 @@ class MainActivity : AppCompatActivity(), IBaseGpsListener, ISpeedRangeSelection
             speedometer!!.setSpeed(SPEED_FACTOR * location.speed)
             speedometer!!.setLocation(location)
         }
+    }
+
+
+    private fun setOff() {
+        speedometer!!.setOff()
+        intervals.filter { it.lo == 0 }.forEach { it.setOff() }
+    }
+
+
+    private fun checkForSetOff(a: FloatArray) {
+        // TODO: find appropriate values for "set off" (acceleration along the z-axis greater than 0.1 is a mere guess)
+        appInfoView!!.text = "(%2.2f, %2.2f, %2.2f)".format(a[0], a[1], a[2])
+        if (a[2] > aThreshold) {
+            setOff()
+        }
+    }
+
+
+    override fun onSensorChanged(event: SensorEvent) {
+        when (event.sensor.type) {
+            Sensor.TYPE_LINEAR_ACCELERATION -> checkForSetOff(event.values)
+        }
+    }
+
+
+    override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {
+        Log.d("ACCURACY", "$accuracy")
     }
 
 
@@ -298,16 +377,11 @@ class MainActivity : AppCompatActivity(), IBaseGpsListener, ISpeedRangeSelection
     }
 
 
-    override fun onGpsStatusChanged(event: Int) {
-        Log.d(TAG, "onGpsStatusChanged($event)")
-    }
-
-
     companion object {
         private val TAG = MainActivity::class.java.simpleName
         private val PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION = 0x4001
         private val SPEED_FACTOR = 3.6e3f * 1e-3f
         private val DEFAULT_SMOOTHING_ALPHA = .955f
-        private val SimulationEnabled = false
+        private val DEFAULT_A_THRESHOLD = 0.223f
     }
 }

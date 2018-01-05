@@ -1,6 +1,6 @@
 /*
 
-    Copyright (c) 2017 Oliver Lau <ola@ct.de>, Heise Medien GmbH & Co. KG
+    Copyright (c) 2017-2018 Oliver Lau <ola@ct.de>, Heise Medien GmbH & Co. KG
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@ class AccelerationSequence(val size: Int) {
     private var d = Array(size, { Vector3() })
 
     var alpha: Float = 0f
-    var empty: Boolean = true
+    var empty = true
         private set
     var last: Vector3 = Vector3()
         private set
@@ -41,6 +41,7 @@ class AccelerationSequence(val size: Int) {
     fun add(e: FloatArray) {
         if (empty) {
             empty = false
+            last = Vector3(e[0], e[1], e[2])
         } else {
             last.x = alpha * last.x + (1 - alpha) * e[0]
             last.y = alpha * last.y + (1 - alpha) * e[1]

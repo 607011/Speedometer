@@ -1,6 +1,6 @@
 /*
 
-    Copyright (c) 2017 Oliver Lau <ola@ct.de>, Heise Medien GmbH & Co. KG
+    Copyright (c) 2017-2018 Oliver Lau <ola@ct.de>, Heise Medien GmbH & Co. KG
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -77,17 +77,30 @@ class SpeedInterval(private val activity: AppCompatActivity, viewId: Int, defaul
     }
 
 
+    fun setOff() {
+        if (t0 == 0L) {
+            t0 = System.currentTimeMillis()
+        }
+    }
+
+
+    private fun remember() {
+        if (dt == 0L) {
+            dt = System.currentTimeMillis() - t0
+            stopwatchView.setTime(1e-3f * dt)
+        }
+    }
+
+
     fun process(v: Float) {
-        val t = System.currentTimeMillis()
         if (v <= lo.toFloat()) {
             reset()
         } else {
-            if (v >= lo.toFloat() && t0 == 0L) {
-                t0 = t
+            if (v >= lo.toFloat()) {
+                setOff()
             }
-            if (v >= hi.toFloat() && dt == 0L) {
-                dt = t - t0
-                stopwatchView.setTime(1e-3f * dt)
+            if (v >= hi.toFloat()) {
+                remember()
             }
         }
     }
