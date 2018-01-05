@@ -50,19 +50,9 @@ class MainActivity : AppCompatActivity(), LocationListener, ISpeedRangeSelection
     private var rotationVector: Sensor? = null
     private var wakeLock: PowerManager.WakeLock? = null
     private var stationaryDetect: Sensor? = null
-    /*
-    private var significantMotion: Sensor? = null
-    private var significantMotionListener = object : TriggerEventListener() {
-        private var counter : Int = 0
-        override fun onTrigger(event: TriggerEvent) {
-            ++counter
-            appInfoView!!.text = event.toString() + " counter: " + counter
-            sensorManager!!.requestTriggerSensor(this, significantMotion)
-        }
-    }
-    */
     private var appInfoView: TextView? = null
     private var aThreshold = 0.2f
+    private var aThresholdSeekbar: SeekBar? = null
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -98,17 +88,21 @@ class MainActivity : AppCompatActivity(), LocationListener, ISpeedRangeSelection
                 prefs.edit().putFloat("alpha", alpha).apply()
             }
         })
-        var aSeekBar: SeekBar = findViewById(R.id.aSeekBar) as SeekBar
-        aSeekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+        val aThresholdMultiplyer = 3.0f
+        aThresholdSeekbar = findViewById(R.id.aSeekBar) as SeekBar
+        aThresholdSeekbar!!.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            fun progressToA(seekBar: SeekBar) : Float {
+                return aThresholdMultiplyer * seekBar.progress.toFloat() / seekBar.max.toFloat()
+            }
             override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
-                setAThreshold(progress.toFloat() / alphaSeekBar.max)
+                setAThreshold(progressToA(seekBar))
             }
             override fun onStartTrackingTouch(seekBar: SeekBar) {
                 // do nothing ...
             }
             override fun onStopTrackingTouch(seekBar: SeekBar) {
                 val prefs = getPreferences(Context.MODE_PRIVATE)
-                aThreshold = seekBar.progress.toFloat() / seekBar.max
+                aThreshold = progressToA(seekBar)
                 prefs.edit().putFloat("aThreshold", aThreshold).apply()
             }
         })
@@ -116,6 +110,7 @@ class MainActivity : AppCompatActivity(), LocationListener, ISpeedRangeSelection
         val alpha = prefs.getFloat("alpha", DEFAULT_SMOOTHING_ALPHA)
         alphaSeekBar.progress = (alpha * alphaSeekBar.max).toInt()
         setAThreshold(prefs.getFloat("aThreshold", DEFAULT_A_THRESHOLD))
+        aThresholdSeekbar!!.progress = (aThreshold / aThresholdMultiplyer * aThresholdSeekbar!!.max).toInt()
         appInfoView = findViewById(R.id.appInfoView) as TextView
         appInfoView!!.text = "Speedometer ${BuildConfig.VERSION_NAME}-${BuildConfig.VERSION_CODE} ${BuildConfig.DATE_OF_BUILD}"
     }
@@ -123,8 +118,6 @@ class MainActivity : AppCompatActivity(), LocationListener, ISpeedRangeSelection
 
     private fun setAThreshold(a: Float) {
         aThreshold = a
-        var aSeekBar: SeekBar = findViewById(R.id.aSeekBar) as SeekBar
-        aSeekBar.progress = (aThreshold * aSeekBar.max).toInt()
         (findViewById(R.id.aThresholdView) as TextView).text = "%.3f".format(aThreshold)
     }
 
@@ -179,7 +172,6 @@ class MainActivity : AppCompatActivity(), LocationListener, ISpeedRangeSelection
         sensorManager!!.registerListener(speedometer, magneticField, SensorManager.SENSOR_DELAY_NORMAL)
         sensorManager!!.registerListener(speedometer, rotationVector, SensorManager.SENSOR_DELAY_NORMAL)
         stationaryDetect?.let { sensorManager!!.registerListener(speedometer, stationaryDetect, SensorManager.SENSOR_DELAY_NORMAL) }
-        //sensorManager!!.requestTriggerSensor(significantMotionListener, significantMotion)
         keepAlive()
     }
 
@@ -195,7 +187,6 @@ class MainActivity : AppCompatActivity(), LocationListener, ISpeedRangeSelection
         stationaryDetect?.let {
             sensorManager!!.unregisterListener(speedometer, stationaryDetect)
         }
-        //sensorManager!!.cancelTriggerSensor(significantMotionListener, significantMotion)
         allowSleep()
     }
 
