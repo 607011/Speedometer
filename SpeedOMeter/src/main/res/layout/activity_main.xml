@@ -19,81 +19,85 @@
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintHorizontal_bias="0.0" />
 
-    <LinearLayout
-        android:id="@+id/linearlayout"
-        android:orientation="horizontal"
-        android:gravity="center"
+    <GridLayout
+        android:id="@+id/gridLayoutSliders"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
+        android:layout_gravity="fill"
+        android:layout_margin="1dp"
+        android:orientation="horizontal"
+        android:columnCount="3"
+        android:rowCount="2"
+        app:layout_constraintBottom_toTopOf="@+id/gridLayout"
         app:layout_constraintTop_toBottomOf="@+id/speedometer">
-        <SeekBar
-            android:id="@+id/alphaSeekBar"
+        <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="4"
-            android:paddingBottom="10dp"
-            android:paddingTop="10dp"
+            android:layout_gravity="fill_horizontal"
+            android:labelFor="@+id/alphaSeekBar"
+            android:text="@string/smoothing"
+            android:textAlignment="center"
+            android:textSize="12sp" />
+        <TextView
+            android:layout_columnSpan="2"
+            android:labelFor="@+id/aSeekBar"
+            android:layout_gravity="fill"
+            android:text="@string/aThreshold"
+            android:textAlignment="center"
+            android:textSize="12sp" />
+        <SeekBar
+            android:id="@+id/alphaSeekBar"
+            android:layout_gravity="fill_horizontal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:max="10000"
             android:progress="9000" />
         <SeekBar
             android:id="@+id/aSeekBar"
+            android:layout_gravity="fill_horizontal"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="4"
-            android:paddingBottom="10dp"
-            android:paddingTop="10dp"
             android:max="10000"
             android:progress="1000" />
         <TextView
             android:id="@+id/aThresholdView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:textAlignment="center"
-            android:textSize="10sp"
-            android:text=""
-            android:paddingBottom="10dp"
-            android:paddingTop="10dp"/>
-    </LinearLayout>
+            android:text="---"
+            android:textSize="12sp" />
+    </GridLayout>
 
     <GridLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:columnCount="2"
         android:rowCount="2"
-        app:layout_constraintTop_toBottomOf="@+id/linearlayout"
+        app:layout_constraintTop_toBottomOf="@+id/gridLayoutSliders"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintBottom_toTopOf="@+id/appInfoView"
         android:id="@+id/gridLayout">
-
         <de.ct.speedometer.StopwatchView
             android:id="@+id/stopwatch1"
             android:background="@drawable/ripple"
             android:layout_margin="1dp"
             />
-
         <de.ct.speedometer.StopwatchView
             android:id="@+id/stopwatch2"
             android:background="@drawable/ripple"
             android:layout_margin="1dp"
             />
-
         <de.ct.speedometer.StopwatchView
             android:id="@+id/stopwatch3"
             android:background="@drawable/ripple"
             android:layout_margin="1dp"
             />
-
         <de.ct.speedometer.StopwatchView
             android:id="@+id/stopwatch4"
             android:background="@drawable/ripple"
             android:layout_margin="1dp"
             />
-
     </GridLayout>
 
     <TextView

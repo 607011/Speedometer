@@ -335,8 +335,6 @@ class MainActivity : AppCompatActivity(), LocationListener, ISpeedRangeSelection
 
 
     private fun checkForSetOff(a: FloatArray) {
-        // TODO: find appropriate values for "set off" (acceleration along the z-axis greater than 0.1 is a mere guess)
-        appInfoView!!.text = "(%2.2f, %2.2f, %2.2f)".format(a[0], a[1], a[2])
         if (a[2] > aThreshold) {
             setOff()
         }
